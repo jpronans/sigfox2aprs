@@ -30,16 +30,16 @@ logger.addHandler(handler)
 
 
 def process_sigfox_messages(topic, payload):
-    logger.debug(payload)
+    logger.debug("Payload %s" % payload)
+    aprs = aprslib.IS(parser.get('aprs', 'callsign'),
+                          parser.get('aprs', 'password'),
+                          parser.get('aprs', 'host'),
+                          parser.get('aprs', 'port'))
+    aprs.connect()
     if topic == "sigfox/aprs":
         # Grab the bits we need from the mqtt payload
         id, lat, long, sats, hdop = payload.split(':')
         # http://www.aprs.org/aprs11/SSIDs.txt One way trackers should use -12
-        aprs = aprslib.IS(parser.get('aprs', 'callsign'),
-                          parser.get('aprs', 'password'),
-                          parser.get('aprs', 'host'),
-                          parser.get('aprs', 'port'))
-        aprs.connect()
 
         # Currently only have two units.
         if id == "1511B":
@@ -48,9 +48,19 @@ def process_sigfox_messages(topic, payload):
             data = "EI0AC-8>APZWIT:!%s/%sa Sats:%s HDOP:%s Unit:%s" % (lat, long, sats, hdop, id)
 
         notify("Sending:", data)
-        logger.debug("Sending: %s" % data)
-
+        logger.info("Sending: %s" % data)
         aprs.sendall(data)
+
+    elif topic == "sigfox/telem":
+        id, seqNumber, snr, avgSnr, rssi, sats, hdop = payload.split(':')
+        if id == "1511B":
+            data = "EI0AC-9>APZWIT:T#%03d,%03d,%03d,%03d,%03d,%03d,00000000" % ((int(seqNumber) % 255), int(float(snr)),  int(float(avgSnr)), abs(float(rssi)), int(sats), int(hdop))
+        if id == "151DD":
+            data = "EI0AC-8>APZWIT:T#%03d,%03d,%03d,%03d,%03d,%03d,00000001" % ((int(seqNumber) % 255), int(float(snr)),  int(float(avgSnr)), abs(float(rssi)), int(sats), int(hdop))
+        logger.info("Sending: %s" % data)
+        aprs.sendall(data)
+        time.sleep(1)
+
 
 # Send desktop notification.
 def notify(title, message):
@@ -79,9 +89,11 @@ def on_connect(client, userdata, flags, rc):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     global exit_me
-    logger.debug("Topic is: %s" % msg.topic)
+    # logger.debug("Topic is: %s" % msg.topic)
     # Output from the cc128 perl scripts
     if msg.topic == "sigfox/aprs":
+        process_sigfox_messages(msg.topic, msg.payload)
+    if msg.topic == "sigfox/telem":
         process_sigfox_messages(msg.topic, msg.payload)
     # Control Messages
     elif msg.topic == "sigfox/debug":

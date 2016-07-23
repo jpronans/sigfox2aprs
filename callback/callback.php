@@ -8,12 +8,22 @@
   $current .= $actual_link;
   // Write the contents back to the file
   file_put_contents($file, $current);
+  // Bare minumum needed for APRS
   $_id = $_GET["id"];
   $_lat = $_GET["lat"];
   $_lng = $_GET["lng"];
   $_data = $_GET["data"];
   
-// Based on code from quicksand.be
+  // Extra information 
+  $_time = $_GET["time"];
+  $_duplicate = $_GET["duplicate"];
+  $_snr = $_GET["snr"];
+  $_station = $_GET["station"];
+  $_rssi = $_GET["rssi"];
+  $_avgSnr = $_GET["avgSnr"];
+  $_seqNumber= $_GET["seqNumber"];
+
+  // Based on code from quicksand.be
   // See https://developer.mbed.org/users/quicksand/code/QW-TEMP_GPS-NMEA/shortlog
   // Make sure we have data in the variable before proceeding
   if(isset($_GET["data"])){
@@ -59,7 +69,7 @@
         $_hdopvar = hexdec(substr($_GET["data"],22,2));
         $hdop = $_hdopmask & $_hdopvar;
 	// Write it out
-        $_filedata = "Lat: " .$lat_aprs. " , Long: ".$lng_aprs. " , Sats: ".$sats." HDOP: ".$hdop."\r\n";
+        $_filedata = "Lat: " .$lat_aprs. ", Long: ".$lng_aprs. ", Sats: ".$sats.", HDOP: ".$hdop."\r\n";
       
 	// Publish to MQTT
 	require("phpMQTT/phpMQTT.php");
@@ -71,6 +81,17 @@
                 $mqtt->publish("sigfox/".$_id."/sats",$sats,0);
                 $mqtt->publish("sigfox/".$_id."/hdop",$hdop,0);
 		$mqtt->publish("sigfox/aprs",$_id.":".$lat_aprs.":".$lng_aprs.":".$sats.":".$hdop,0);
+		// Extra Info, may use for Telemetry later
+		$mqtt->publish("sigfox/".$_id."/time",$_time,0);
+		$mqtt->publish("sigfox/".$_id."/duplicate",$_duplicate,0);
+		$mqtt->publish("sigfox/".$_id."/snr",$_snr,0);
+                $mqtt->publish("sigfox/".$_id."/station",$_station,0);
+                $mqtt->publish("sigfox/".$_id."/rssi",$_rssi,0);
+                $mqtt->publish("sigfox/".$_id."/avgSnr",$_avgSnr,0);
+                $mqtt->publish("sigfox/".$_id."/seqNumber",$_seqNumber,0);
+		$mqtt->publish("sigfox/telem",$_id.":".$_seqNumber.":".$_snr.":".$_avgSnr.":".$_rssi.":".$sats.":".$hdop,0);
+
+
 		$mqtt->close();
 	}
       }
