@@ -78,6 +78,13 @@ int main()
     position_update.attach(&txpos, updateinterval_s);
     SW2.fall(&sw1interrupt);
     SW1.fall(&sw2interrupt);
+    // 1 = Power On
+    // 16 = Min number of satellites before considering a fix as valid
+    // 0 = Minimum hdop value before considering a fix as valid
+    // 65535 = No timeout 
+    // 1 = Leave GPS on after fix or timeout
+    // 1 = Print all NMEA messages during current fix.
+    // i.e. Start the GPS and navigate permenantly p91 of the Manual 
     command("AT$GPS=1,16,0,65535,1,1\n");
     while(1) {
         if(!commandogiven) {
