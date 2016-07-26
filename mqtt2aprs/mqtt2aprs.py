@@ -42,23 +42,26 @@ def process_sigfox_messages(topic, payload):
         # http://www.aprs.org/aprs11/SSIDs.txt One way trackers should use -12
 
         # Currently only have two units.
-        if id == "1511B":
+        data = None
+	if id == "1511B":
             data = "EI0AC-9>APZWIT:!%s/%sa Sats:%s HDOP:%s Unit:%s" % (lat, long, sats, hdop, id)
         if id == "151DD":
             data = "EI0AC-8>APZWIT:!%s/%sa Sats:%s HDOP:%s Unit:%s" % (lat, long, sats, hdop, id)
-
-        notify("Sending:", data)
-        logger.info("Sending: %s" % data)
-        aprs.sendall(data)
+	if data is not None:
+        	notify("Sending:", data)
+        	logger.info("Sending: %s" % data)
+        	aprs.sendall(data)
 
     elif topic == "sigfox/telem":
+        data = None
         id, seqNumber, snr, avgSnr, rssi, sats, hdop = payload.split(':')
         if id == "1511B":
             data = "EI0AC-9>APZWIT:T#%03d,%03d,%03d,%03d,%03d,%03d,00000000" % ((int(seqNumber) % 255), int(float(snr)),  int(float(avgSnr)), abs(float(rssi)), int(sats), int(hdop))
         if id == "151DD":
             data = "EI0AC-8>APZWIT:T#%03d,%03d,%03d,%03d,%03d,%03d,00000001" % ((int(seqNumber) % 255), int(float(snr)),  int(float(avgSnr)), abs(float(rssi)), int(sats), int(hdop))
-        logger.info("Sending: %s" % data)
-        aprs.sendall(data)
+        if data is not None:
+		logger.info("Sending: %s" % data)
+        	aprs.sendall(data)
         time.sleep(1)
 
 
