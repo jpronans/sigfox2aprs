@@ -39,6 +39,7 @@
     if(substr($_GET["data"],7,12) != "ffffffffffff")
       {
         // Convert it to decimal
+        $_preamble = hexdec( substr($_GET["data"],0,2));
 	$_gps = hexdec( substr($_GET["data"],7,12));
 	$_length = strlen($_gps);
 
@@ -69,7 +70,7 @@
         $_hdopvar = hexdec(substr($_GET["data"],22,2));
         $hdop = $_hdopmask & $_hdopvar;
 	// Write it out
-        $_filedata = "Lat: " .$lat_aprs. ", Long: ".$lng_aprs. ", Sats: ".$sats.", HDOP: ".$hdop."\r\n";
+        $_filedata = "Preamble: ".$_preamble.", Lat: " .$lat_aprs. ", Long: ".$lng_aprs. ", Sats: ".$sats.", HDOP: ".$hdop."\r\n";
       
 	// Publish to MQTT
 	require("phpMQTT/phpMQTT.php");
