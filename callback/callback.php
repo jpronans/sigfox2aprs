@@ -70,7 +70,7 @@
         $_hdopvar = hexdec(substr($_GET["data"],22,2));
         $hdop = $_hdopmask & $_hdopvar;
 	// Write it out
-        $_filedata = "Preamble: ".$_preamble.", Lat: " .$lat_aprs. ", Long: ".$lng_aprs. ", Sats: ".$sats.", HDOP: ".$hdop."\r\n";
+        $_filedata = "ID: ".$_id.", Preamble: ".$_preamble.", Lat: " .$lat_aprs. ", Long: ".$lng_aprs. ", Sats: ".$sats.", HDOP: ".$hdop."\r\n";
       
 	// Publish to MQTT
 	require("phpMQTT/phpMQTT.php");
