@@ -5,6 +5,7 @@ from ConfigParser import SafeConfigParser
 import logging
 import logging.handlers
 import aprslib
+import os
 
 # Constant
 exit_me = False
@@ -33,12 +34,40 @@ def process_sigfox_messages(topic, payload):
     logger.debug("Payload %s" % payload)
 
     if topic == "sigfox/survey":
+        time, data, id, station, duplicate, rssi, snr, avgSnr, seqNumber, lat, long  = payload.split(':')
+
         # Grab the bits we need from the mqtt payload
-        f = open("survey.txt", "a")
-        f.write(payload)
-        f.write('\n')
+        f = open("/var/www/html/sigfox-"+station+".js", "a+")
+        
+        #Move the pointer (similar to a cursor in a text editor) to the end of the file. 
+        f.seek(0, os.SEEK_END)
+
+        #This code means the following code skips the very last character in the file - 
+        #i.e. in the case the last line is null we delete the last line 
+        #and the penultimate one
+        pos = f.tell() - 1
+
+        #Read each character in the file one at a time from the penultimate 
+        #character going backwards, searching for a newline character
+        #If we find a new line, exit the search
+        while pos > 0 and f.read(1) != "\n":
+                pos -= 1
+                f.seek(pos, os.SEEK_SET)
+
+        #So long as we're not at the start of the file, delete all the characters ahead of this position
+        if pos > 0:
+                f.seek(pos, os.SEEK_SET)
+                f.truncate()
+	
+	outStr = "\n[%.4f, %.4f, %3d],  <!-- %s -->\n];\n" % (float(lat), float(long), int(float(rssi)+200), payload)   
+        try:
+        	f.write(outStr)
+        except:
+            outStr = "Could not write log file, check it.\n"
+            logging.debug(outStr)
+  
         f.close()
-        notify("logged:", payload)
+#        notify("logged:", payload)
         logger.info("Logged: %s" % payload)
 
 
@@ -70,8 +99,6 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     global exit_me
 
-    # logger.debug("Topic is: %s" % msg.topic)
-    # Output from the cc128 perl scripts
     if msg.topic == "sigfox/survey":
         process_sigfox_messages(msg.topic, msg.payload)
     # Control Messages
