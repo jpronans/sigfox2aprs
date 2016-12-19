@@ -4,7 +4,6 @@ import time
 from ConfigParser import SafeConfigParser
 import logging
 import logging.handlers
-import aprslib
 import os
 
 # Constant
@@ -34,22 +33,22 @@ def process_sigfox_messages(topic, payload):
     logger.debug("Payload %s" % payload)
 
     if topic == "sigfox/survey":
-        time, data, id, station, duplicate, rssi, snr, avgSnr, seqNumber, lat, long  = payload.split(':')
+        time, data, id, station, duplicate, rssi, snr, avgSnr, seqNumber, lat, long = payload.split(':')
 
         # Grab the bits we need from the mqtt payload
-        f = open("/var/www/html/sigfox-"+station+".js", "a+")
-        
-        #Move the pointer (similar to a cursor in a text editor) to the end of the file. 
+        f = open(parser.get('logging', 'prefix')+"-"+station+".js", "a+")
+
+        # Move the pointer (similar to a cursor in a text editor) to the end of the file. 
         f.seek(0, os.SEEK_END)
 
-        #This code means the following code skips the very last character in the file - 
-        #i.e. in the case the last line is null we delete the last line 
-        #and the penultimate one
+        # This code means the following code skips the very last character in the file -
+        # i.e. in the case the last line is null we delete the last line
+        # and the penultimate one
         pos = f.tell() - 1
 
-        #Read each character in the file one at a time from the penultimate 
-        #character going backwards, searching for a newline character
-        #If we find a new line, exit the search
+        # Read each character in the file one at a time from the penultimate 
+        # character going backwards, searching for a newline character
+        # If we find a new line, exit the search
         while pos > 0 and f.read(1) != "\n":
                 pos -= 1
                 f.seek(pos, os.SEEK_SET)
@@ -58,16 +57,15 @@ def process_sigfox_messages(topic, payload):
         if pos > 0:
                 f.seek(pos, os.SEEK_SET)
                 f.truncate()
-	
-	outStr = "\n[%.4f, %.4f, %3d],  <!-- %s -->\n];\n" % (float(lat), float(long), int(float(rssi)+200), payload)   
+
+        outStr = "\n[%.4f, %.4f, %3d],  <!-- %s -->\n];\n" % (float(lat), float(long), int(float(rssi)+200), payload)
         try:
-        	f.write(outStr)
+            f.write(outStr)
         except:
-            outStr = "Could not write log file, check it.\n"
+            outStr = "Caught Exception: could not write to log file.\n"
             logging.debug(outStr)
-  
+
         f.close()
-#        notify("logged:", payload)
         logger.info("Logged: %s" % payload)
 
 
@@ -90,6 +88,7 @@ def on_connect(client, userdata, flags, rc):
     for item in parser.get('mqtt', 'topics').split(','):
         topic_list.append((item.lstrip(), 0))
     logger.info("Topic list is: %s" % topic_list)
+    logger.info("Prefix is: %s" % parser.get('logging', 'prefix'))
 
     client.subscribe(topic_list)
     logger.info("Subscribed")
